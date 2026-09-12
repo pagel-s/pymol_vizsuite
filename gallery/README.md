@@ -5,7 +5,7 @@ question behind a figure: *what should the reader understand at a glance?*
 
 <p align="center">
   <img src="03_topology.jpg" width="30%" alt="Journal topology figure" />
-  <img src="06_assembly_dark.jpg" width="30%" alt="Cinematic molecular assembly" />
+  <img src="25_story_clean.png" width="30%" alt="Clean cinematic molecular hero" />
   <img src="04_haemoglobin.jpg" width="30%" alt="Illustrated haemoglobin" />
 </p>
 

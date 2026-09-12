@@ -10,7 +10,7 @@ the current look.
 
 <p align="center">
   <img src="gallery/03_topology.jpg" width="44%" alt="Clean secondary-structure figure" />
-  <img src="gallery/06_assembly_dark.jpg" width="44%" alt="Cinematic molecular assembly" />
+  <img src="gallery/25_story_clean.png" width="44%" alt="Clean cinematic molecular hero" />
 </p>
 
 **[Explore the gallery](gallery/README.md)** · **[Command reference](docs/REFERENCE.md)** · **[Instructions for AI agents](AGENTS.md)**

@@ -2,7 +2,7 @@
 
 Turn a structure into a figure worth publishing, in one command.
 
-`pymol_vizsuite.py` is a single-file PyMOL plugin. It ships 25 complete visual
+`pymol_vizsuite.py` is a single-file PyMOL plugin. It ships complete visual
 styles — illustrative Goodsell-style renders, journal cartoons, cel-shaded
 posters, dark presentation heroes, binding-site close-ups — together with a
 render pipeline that keeps ink outlines the same weight in print as on screen,
@@ -35,6 +35,23 @@ viz_render ~/figure.png, slide
 `viz_gallery` renders every applicable style as a labelled contact sheet, so
 you can choose a look by eye instead of by name.
 
+## Start with an intention
+
+Use these five short names for the common jobs. They are aliases for the
+underlying complete styles, so `viz_script` always exports a reproducible
+result.
+
+| Intent | Command | Underlying style |
+|---|---|---|
+| Journal figure | `viz paper` | `publication` |
+| Talk or cover image | `viz story` | `cinematic` |
+| Molecular illustration | `viz illustration` | `illustrative` |
+| Binding-site detail | `viz site` | `pocket` |
+| AlphaFold confidence | `viz confidence` | `plddt` |
+
+`viz_auto` remains the zero-decision choice when the structure should choose
+the appropriate look from its contents.
+
 ## Commands
 
 | Command | Does |
@@ -63,8 +80,11 @@ Run `viz_list styles` for descriptions.
 **Illustrative** `illustrative` `goodsell` `comic` `blueprint` `sketch`
 **Publication** `publication` `flatcartoon` `topology` `tube` `putty` `ghost`
 `pocket` `cryoem` `clay`
-**Presentation** `hero` `neon` `noir` `spacefill` `qutemol`
-**Molecules** `chem` `licorice` `dna`
+**Presentation** `hero` `cinematic` `neon` `noir` `spacefill` `qutemol`
+`macro` `architect` `section`
+**Molecules** `chem` `licorice` `dna` `nucleoprotein`
+**Interactions** `interface` `epitope` `peptide` `contacts`
+**Schematic** `diagram`
 **Analysis** `plddt` `hydrophobic` `charge`
 
 ```

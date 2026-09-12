@@ -55,7 +55,7 @@ import re
 from pymol import cmd, util
 from pymol import CmdException
 
-__version__ = "2.19.0"
+__version__ = "2.20.0"
 
 # ==========================================================================
 # palettes
@@ -620,6 +620,17 @@ STYLE_GROUPS = [
     ("schematic", ["diagram"]),
     ("analysis", ["plddt", "hydrophobic", "charge"]),
 ]
+
+# The complete catalogue is deliberately still available, but most figures start
+# with one of these five intentions.  These are aliases rather than separate
+# styles so a result is always reproducible with the underlying named style.
+STYLE_ALIASES = {
+    "paper": "publication",
+    "story": "cinematic",
+    "illustration": "illustrative",
+    "site": "pocket",
+    "confidence": "plddt",
+}
 
 COLORINGS = ("chain", "chain-carbon", "assembly", "entity", "polymer",
              "spectrum",
@@ -2941,6 +2952,7 @@ EDGE_DEFAULT = (0.12, 1.0, 4.0, 1.0)
 
 def _style(name):
     st = dict(STYLE_DEFAULTS)
+    name = STYLE_ALIASES.get(_s(name).lower(), name)
     st.update(STYLES[_resolve(name, STYLES, "style", "publication")])
     return st
 
@@ -4295,7 +4307,8 @@ USAGE
 
 ARGUMENTS
 
-    style      = auto, or one of the presets listed by viz_list
+    style      = auto, a starter (paper | story | illustration | site |
+                 confidence), or one of the presets listed by viz_list
     selection  = what to restyle {default: everything}
     coloring   = chain | chain-carbon | entity | spectrum | spectrum-chain |
                  ss | element | mono | bfactor | plddt | hydrophobicity |
@@ -4334,6 +4347,9 @@ ARGUMENTS
 EXAMPLES
 
     viz                                     # pick a style automatically
+    viz paper                               # clean journal figure
+    viz story                               # cinematic slide or cover image
+    viz site                                # binding-site close-up
     viz illustrative
     viz goodsell, palette=pastel, blob=3.5
     viz publication, coloring=ss
@@ -4349,7 +4365,8 @@ SEE ALSO
     sel = _s(selection)
     name = _s(style, "auto")
     # be forgiving: `viz polymer` should mean "auto style, this selection"
-    if name.lower() not in STYLES and name.lower() != "auto":
+    if name.lower() not in STYLES and name.lower() not in STYLE_ALIASES \
+            and name.lower() != "auto":
         try:
             if cmd.count_atoms(name) and not sel:
                 sel, name = name, "auto"
@@ -4363,6 +4380,8 @@ SEE ALSO
     info = _survey(sel)
     if name.lower() == "auto":
         name = _pick_style(info)
+    else:
+        name = STYLE_ALIASES.get(name.lower(), name)
     st = _style(name)
     name = _resolve(name, STYLES, "style")
 
@@ -6056,6 +6075,9 @@ USAGE
     show_all = not key
 
     if show_all or key.startswith("style"):
+        print("\n START HERE")
+        for alias, name in STYLE_ALIASES.items():
+            print("   %-14s %s" % (alias, STYLES[name]["desc"].split(". ")[0]))
         print("\n STYLES")
         for group, names in STYLE_GROUPS:
             print("   [%s]" % group)
@@ -6084,8 +6106,9 @@ USAGE
         print("\n VIEWS\n   " + ", ".join(VIEWS))
         print(" FRAMES\n   " + ", ".join(FRAMES))
     if show_all:
-        print("\n Try:  viz_auto        then  viz_render ~/fig.png, slide")
-        print(" Or:   viz_gallery     to see every style on your structure\n")
+        print("\n Start: viz paper     then  viz_render ~/figure.png, fit, width=2400")
+        print("        viz story     then  viz_render ~/slide.png, slide")
+        print(" Explore: viz_gallery     to compare the full catalogue\n")
 
 
 # ==========================================================================
@@ -6209,7 +6232,7 @@ EXAMPLES
         names = list(groups[txt.lower()])
         explicit = False
     else:
-        names = [_resolve(p, STYLES, "style")
+        names = [_resolve(STYLE_ALIASES.get(p.lower(), p), STYLES, "style")
                  for p in re.split(r"[,\s]+", txt) if p]
     if not explicit and not _b(all):
         info = _survey(sel)
@@ -6612,7 +6635,8 @@ _COMMANDS = {
 for _name, _fn in _COMMANDS.items():
     cmd.extend(_name, _fn)
 
-cmd.auto_arg[0]["viz"] = [lambda: cmd.Shortcut(["auto"] + list(STYLES)),
+cmd.auto_arg[0]["viz"] = [lambda: cmd.Shortcut(
+    ["auto"] + list(STYLE_ALIASES) + list(STYLES)),
                           "style", ", "]
 cmd.auto_arg[1]["viz"] = cmd.auto_arg[0]["zoom"]
 cmd.auto_arg[0]["viz_color"] = [lambda: cmd.Shortcut(list(COLORINGS)),
@@ -7067,5 +7091,3 @@ def _make_dialog():
 
     sync_labels()
     return dlg
-
-

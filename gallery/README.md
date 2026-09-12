@@ -1,12 +1,30 @@
-# Gallery
+# Gallery: five ways to make the molecule matter
+
+This is not a style catalogue. It is a set of visual answers to the first
+question behind a figure: *what should the reader understand at a glance?*
+
+<p align="center">
+  <img src="03_topology.jpg" width="30%" alt="Journal topology figure" />
+  <img src="06_assembly_dark.jpg" width="30%" alt="Cinematic molecular assembly" />
+  <img src="04_haemoglobin.jpg" width="30%" alt="Illustrated haemoglobin" />
+</p>
+
+| When the figure needs to… | Start with | See it here |
+|---|---|---|
+| explain a result without visual noise | `viz paper` | [fold and topology](#the-fold-itself) |
+| command a room or open a talk | `viz story` | [dark-stage assembly](#the-same-complex-as-a-photograph) |
+| make molecular architecture tangible | `viz illustration` | [haemoglobin in ink](#every-atom-outlined) |
+| show why a ligand binds | `viz site` | [binding site](#binding-site) |
+| show model confidence honestly | `viz confidence` | [AlphaFold confidence](#alphafold-confidence) |
 
 Every image below is the direct output of the one or two commands printed under
 it. No retouching, no hand-picked viewpoint, no cleanup afterwards. Orientation,
 canvas shape, framing, colour grouping, ink weight, scale bars and colour keys
-are all decided by the plugin.
+are decided by the plugin.
 
 Images here are downsized to 1200 px for the repository; they render at
-1800–2600 px.
+1800–2600 px. The [README](../README.md) is the shortest route to your first
+image; this page is where to choose a visual language deliberately.
 
 ---
 
@@ -26,7 +44,7 @@ on one already placed is left unlabelled.
 ![Binding site](01_site_detail.jpg)
 
 ```
-viz pocket
+viz site
 viz_label residues, byres (polymer within 4.2 of organic)
 ```
 
@@ -64,7 +82,7 @@ so they can be counted. The haems take the one reserved accent.
 ![Haemoglobin](04_haemoglobin.jpg)
 
 ```
-viz illustrative
+viz illustration
 ```
 
 ### A 21-chain assembly
@@ -86,7 +104,7 @@ Dark stage, rim light, bloom and a shallow focal plane.
 ![Chaperonin on a dark stage](06_assembly_dark.jpg)
 
 ```
-viz cinematic, view=hero
+viz story, view=hero
 ```
 
 ---
@@ -166,7 +184,7 @@ cropped, so the reader can see how much of the model is guesswork.
 ![AlphaFold pLDDT](12_plddt.jpg)
 
 ```
-viz plddt
+viz confidence
 ```
 
 ### Kyte–Doolittle surface

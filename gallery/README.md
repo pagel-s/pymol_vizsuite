@@ -355,7 +355,7 @@ viz epitope
 The receptor as a quiet surface, the peptide thick in its groove with the side
 chains that do the work, the groove marked and polar contacts dashed.
 
-![The p53 peptide in the MDM2 groove](22_peptide.jpg)
+![The p53 peptide in the MDM2 groove](22_peptide.png)
 
 ```
 viz peptide
@@ -382,12 +382,13 @@ turns both contact faces toward the camera — a quarter turn each in opposite
 directions, not a single half turn of one, which would leave both faces
 pointing sideways.
 
-![Antibody and lysozyme opened out, epitope fully in view](24_openbook.jpg)
+![Antibody and lysozyme opened out, epitope fully in view](24_openbook.png)
 
 ```
 viz_partners chain Y, chain H+L
 viz epitope
 viz_openbook
+viz_render openbook.png, fit, width=1600
 ```
 
 It moves coordinates; reload to undo.

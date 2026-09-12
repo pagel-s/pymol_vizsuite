@@ -502,9 +502,10 @@ STYLES = {
         desc="A receptor as a quiet surface with a peptide lying in its "
              "groove, drawn thick with its side chains. The close scale of a "
              "binding event.",
-        rep="cartoon", light="soft", ao=(1, 11.0, 14), outline=0.0024,
+        rep="cartoon", light="soft", ao=(1, 11.0, 14), outline=0.0,
         ocolor="#2E2C28", ortho=True, blob=1.4, bg="paper",
         palette="molstar", coloring="chain", fog=0.12, interface="peptide",
+        annotations={"legend": 0, "scalebar": 0, "name": 0},
         set={"surface_quality": 1, "cartoon_side_chain_helper": 1,
              "stick_radius": 0.16},
         post={"grade": {"contrast": 1.03}}),
@@ -4610,7 +4611,7 @@ SEE ALSO
         # pass orient=1 when a driver knows the subject is new.
         want_orient = int(not _LAST or _LAST.get("subject_key") != subject_key)
     frame_core = st["focus"] == "core" and want_orient
-    close_up = st.get("interface") in ("contacts", "epitope")
+    close_up = st.get("interface") in ("contacts", "epitope", "peptide")
     if want_orient and not _s(view) and not focus_sel and not frame_core \
             and not close_up:
         partner = None
@@ -4654,7 +4655,7 @@ SEE ALSO
         # Interaction modes are close-ups by definition. A footprint viewed
         # from the side is a thin orange sliver; a contact map viewed from the
         # whole assembly is an unreadable nest of labels.
-        if interaction_mode == "epitope" and interaction_pair:
+        if interaction_mode in ("epitope", "peptide") and interaction_pair:
             if not _orient_pocket(interaction_pair[0], interaction_pair[1]):
                 cmd.orient(interaction_focus)
         elif interaction_pair:
@@ -5405,18 +5406,27 @@ def _apply_interface(rec, sel, st, blob, fine):
                   "peptide with viz_partners if that is not what you meant."
                   % n_res)
             mode = "interface"
-        # at this scale the side chains are the content
-        _apply_rep(rec, big, "surface", blob=blob, fine=fine)
+        # Keep the groove and peptide, not the entire receptor: a full opaque
+        # surface turns the peptide into a few disconnected orange fragments.
+        rec.hide("everything", "(%s)" % sel)
+        core = _dominant_interface_region(big, small, fa, fb)
+        receptor_context = "byres ((%s) and polymer within 16 of (%s))" \
+                           % (big, core)
+        _apply_rep(rec, receptor_context, "surface", blob=blob, fine=fine)
         _apply_rep(rec, small, "cartoon", blob=blob, fine=fine)
         rec.show("sticks", "(%s) and sidechain" % small)
         rec.show("sticks", "(%s) and sidechain" % fa)
-        cmd.color(_color_name("#D5D1C7"), big)
+        cmd.color(_color_name("#D5D1C7"), receptor_context)
         cmd.color(_color_name("#B6A98F"), fa)
         cmd.color(_color_name("#C7522B"), small)
-        groups = [("#D5D1C7", "receptor", big),
+        groups = [("#D5D1C7", "receptor", receptor_context),
                   ("#B6A98F", "groove", fa),
                   ("#C7522B", "peptide", small)]
-        _polar_contacts(rec, small, big)
+        # At this overview scale, unlabelled dashed contacts are visual noise.
+        # `viz contacts` is the dedicated, labelled residue-level answer.
+        _LAST["interaction_focus"] = core
+        _LAST["interaction_pair"] = (big, small)
+        _LAST["interaction_mode"] = "peptide"
     else:
         # One physical interface is the subject. Keeping the entire
         # crystallographic assembly in a contact overview leaves detached
@@ -5490,6 +5500,20 @@ EXAMPLES
     if not a:
         raise CmdException("viz_openbook needs two partners; name them with "
                            "viz_partners a, b")
+    # `viz epitope` deliberately hides the binder so its surface footprint is
+    # unobscured.  An open-book view has the opposite job: show both matching
+    # faces.  Rebuild that simple two-surface scene before moving either half;
+    # after they separate, a distance-based interface selection would vanish.
+    fa, fb = _interface(a, b)
+    footprint = _buried_atoms(a, b, name="viz_openbook_footprint") or fa
+    cmd.hide("everything", "all")
+    cmd.set("surface_mode", 3)
+    cmd.show("surface", a)
+    cmd.show("surface", b)
+    cmd.color(_color_name("#CFD3D0"), a)
+    cmd.color(_color_name("#D8C7A8"), b)
+    cmd.color(_color_name("#C85433"), footprint)
+    cmd.color(_color_name("#255B87"), fb)
     ca = numpy.array(cmd.get_coords(a)).mean(axis=0)
     cb = numpy.array(cmd.get_coords(b)).mean(axis=0)
     n = cb - ca
@@ -5525,6 +5549,17 @@ EXAMPLES
     cmd.translate([float(t) for t in (-u * (0.5 * span + move))], a, camera=0)
     cmd.translate([float(t) for t in (u * (0.5 * span + move))], b, camera=0)
 
+    # Rotation about independent molecular centres leaves the two faces at
+    # arbitrary heights.  A useful open-book panel is a comparison, not two
+    # drifting thumbnails: place their centres on one baseline and leave one
+    # deliberate gutter between them.
+    ca2 = numpy.array(cmd.get_coords(a)).mean(axis=0)
+    cb2 = numpy.array(cmd.get_coords(b)).mean(axis=0)
+    mid = 0.5 * (ca2 + cb2)
+    half_gap = 0.36 * span + 0.5 * move
+    cmd.translate([float(t) for t in (mid - u * half_gap - ca2)], a, camera=0)
+    cmd.translate([float(t) for t in (mid + u * half_gap - cb2)], b, camera=0)
+
     # look straight at the two faces, with the hinge across the frame
     v = list(cmd.get_view())
     z = -w / float(numpy.linalg.norm(w))
@@ -5532,7 +5567,16 @@ EXAMPLES
     m = numpy.column_stack([u, y / float(numpy.linalg.norm(y)), z])
     v[0:9] = [float(t) for t in m.flatten()]
     cmd.set_view(v)
-    cmd.zoom("(%s) or (%s)" % (a, b), 1.0)
+    cmd.zoom("(%s) or (%s)" % (a, b), 0.0, complete=1)
+    cmd.rebuild()
+    _LAST["selection"] = "(%s) or (%s)" % (a, b)
+    _LAST["_enforce_margin"] = True
+    _LAST["colour_groups"] = [
+        ("#CFD3D0", "host surface", a),
+        ("#C85433", "host footprint", footprint),
+        ("#D8C7A8", "binder surface", b),
+        ("#255B87", "binder interface", fb),
+    ]
     if not _b(quiet):
         print(" viz_openbook: opened by %.0f A; coordinates moved, reload to "
               "undo" % move)

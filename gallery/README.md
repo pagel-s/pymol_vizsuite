@@ -107,6 +107,22 @@ Dark stage, rim light, bloom and a shallow focal plane.
 viz story, view=hero
 ```
 
+### A clean hero, ready for a room
+
+For a customer pitch, cover, or opening slide, the molecule should not compete
+with a key, scale bar, or PDB identifier. `story` deliberately removes those
+publication annotations while retaining the same cinematic lighting pipeline.
+
+![Haemoglobin as a clean cinematic hero](25_story_clean.png)
+
+```
+viz story, frame=slide, view=hero
+viz_render haemoglobin-hero.png, slide
+```
+
+Add `legend=1`, `scalebar=20`, or `name=Haemoglobin` to `viz_render` only when
+the image needs to carry scientific annotation as well as atmosphere.
+
 ---
 
 ## Illustration idioms

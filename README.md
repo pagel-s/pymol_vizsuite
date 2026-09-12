@@ -15,6 +15,10 @@ the current look.
 
 **[Explore the gallery](gallery/README.md)** · **[Command reference](docs/REFERENCE.md)** · **[Instructions for AI agents](AGENTS.md)**
 
+Want a working file instead of copying commands? Run the included
+[`paper_figure.pml`](examples/paper_figure.pml) or
+[`pitch_hero.pml`](examples/pitch_hero.pml) directly in PyMOL.
+
 ## The whole workflow
 
 ```pml

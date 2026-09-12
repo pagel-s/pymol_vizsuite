@@ -28,6 +28,10 @@ sensible style.
 | An AlphaFold confidence view | `viz confidence` |
 | A side-by-side style decision | `viz_gallery` |
 
+`viz story` is deliberately annotation-free so it can work as a cover or pitch
+image. If scientific context is needed, opt in at render time with
+`legend=1`, `scalebar=20`, or `name=...`.
+
 ## Rendering contract
 
 Always use `viz_render` for a deliverable. The viewport is only a preview;

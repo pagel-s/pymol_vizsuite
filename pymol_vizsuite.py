@@ -473,6 +473,10 @@ STYLES = {
         rep="auto", light="rim", ao=(1, 16.0, 15), outline=0.0,
         ocolor="black", ortho=False, blob=1.6, bg="deepspace",
         palette="cyber", coloring="assembly", fog=0.40, dof=0.42,
+        # A cover or pitch image needs the molecule to own the whole frame.
+        # `viz_render legend=1, scalebar=20, name=...` remains available when
+        # the same look is used as a labelled figure.
+        annotations={"legend": 0, "scalebar": 0, "name": 0},
         set={}, post={"bloom": (0.55, 0.032, 0.60), "vignette": 0.34,
                       "grade": {"contrast": 1.08, "saturation": 1.06}}),
     "interface": dict(
@@ -2941,7 +2945,7 @@ STYLE_DEFAULTS = dict(desc="", rep="auto", light="soft", ao=None, outline=0.0,
                       coloring="chain", fog=0.0, focus="", edge=None,
                       ink="edge", ink_threshold=12.0, dof=0.0,
                       flat_ribbon=False, gaps=False, interface=False,
-                      set={}, post={})
+                      annotations={}, set={}, post={})
 
 # (gain, depth_factor, slope_factor, disco_factor).
 # Lower depth/slope means the edge detector fires more often, so more interior
@@ -4022,13 +4026,17 @@ EXAMPLES
     target = w / float(h)
     want_legend = _i(legend, -1)
     if want_legend < 0:
-        groups = _resolve_groups(st.get("colour_groups") or [],
-                                 st.get("rep", ""))
-        # a reader cannot recover what a colour means without a key, and the
-        # colour is doing the work in every multi-entity image
-        want_legend = int(st.get("coloring") in DATA_COLORINGS
-                          or st.get("coloring") in ("ss", "polymer")
-                          or 2 <= len(groups) <= 8)
+        annotation = (st.get("annotations") or {}).get("legend")
+        if annotation is not None:
+            want_legend = int(bool(annotation))
+        else:
+            groups = _resolve_groups(st.get("colour_groups") or [],
+                                     st.get("rep", ""))
+            # a reader cannot recover what a colour means without a key, and
+            # the colour is doing the work in every multi-entity image
+            want_legend = int(st.get("coloring") in DATA_COLORINGS
+                              or st.get("coloring") in ("ss", "polymer")
+                              or 2 <= len(groups) <= 8)
 
     cur = _viewport_aspect()
     if _b(fit):
@@ -4064,7 +4072,8 @@ EXAMPLES
 
     bar = _f(scalebar, -1.0)
     if bar < 0:
-        bar = 0.0 if transparent else _auto_scalebar(h, w)
+        annotation = (st.get("annotations") or {}).get("scalebar")
+        bar = 0.0 if transparent or annotation == 0 else _auto_scalebar(h, w)
     # Annotations are drawn in post, so a style that needs no outline and no
     # effects must still take the post path or its scale bar, caption, panel
     # label and colour key silently vanish.
@@ -4187,7 +4196,9 @@ EXAMPLES
                 # "-" is documented as the suppression token; it was being
                 # taken as the name and printed as a stray dash
                 "subject_name": "" if _s(name) == "-" else (
-                    _s(name) or _subject_name(st.get("selection") or "all")),
+                    _s(name) or ("" if (st.get("annotations") or {}).get(
+                        "name") == 0 else _subject_name(
+                            st.get("selection") or "all"))),
                 "subject_alpha": rgba[:, :, 3],
                 "angstrom_per_pixel": _angstrom_per_pixel(h)}
         out = _post_chain(rgba, opts, w, h)
@@ -4651,6 +4662,7 @@ SEE ALSO
                             _f(sharpen, -1.0)),
         "lineart": st["lineart"], "fog": fogv,
         "ink": st["ink"], "ink_threshold": st["ink_threshold"],
+        "annotations": dict(st.get("annotations") or {}),
         "_enforce_margin": bool(frame_core),
         "dof": float(st["dof"]) if _f(dof, -1.0) < 0 else _f(dof, 0.0),
         "colour_groups": list(_LAST_GROUPS),

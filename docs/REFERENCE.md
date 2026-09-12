@@ -52,6 +52,10 @@ result.
 `viz_auto` remains the zero-decision choice when the structure should choose
 the appropriate look from its contents.
 
+The cinematic `story` intent is annotation-free by default so the molecule can
+own a talk or cover image. Its information layer is always available on demand:
+`viz_render story.png, legend=1, scalebar=20, name=Complex`.
+
 ## Commands
 
 | Command | Does |

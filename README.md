@@ -83,6 +83,11 @@ viz_gallery
 at any output size, and adds the scale bar or colour key when the selected
 style needs one.
 
+`viz story` intentionally leaves those annotations off: a cover or customer
+pitch should be all molecule. Add them explicitly when that same cinematic
+lighting serves a labelled figure: `viz_render figure.png, legend=1,
+scalebar=20, name=Complex`.
+
 ```pml
 viz_render ~/figure.png, column, scalebar=20     # 88 mm at 300 dpi
 viz_render ~/figure.png, dcolumn                 # double journal column

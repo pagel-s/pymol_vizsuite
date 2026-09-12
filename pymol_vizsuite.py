@@ -483,18 +483,20 @@ STYLES = {
         desc="Two partners in two hues with the contact residues of both "
              "brought forward. The overview scale of a protein-protein "
              "interaction: which surfaces meet, and where.",
-        rep="cartoon", light="soft", ao=(1, 12.0, 16), outline=0.0022,
+        rep="cartoon", light="soft", ao=(1, 12.0, 16), outline=0.0,
         ocolor="#2E2C28", ortho=True, blob=1.5, bg="paper",
         palette="molstar", coloring="chain", fog=0.10, interface=True,
+        annotations={"legend": 0, "scalebar": 0, "name": 0},
         set={"surface_quality": 1, "two_sided_lighting": 1},
         post={"grade": {"contrast": 1.03}}),
     "epitope": dict(
         desc="One partner as a solid surface painted with the footprint of "
-             "the other, which is drawn as a ribbon over it. The figure that "
+             "the other. The figure that "
              "answers 'what does it actually touch'.",
-        rep="cartoon", light="soft", ao=(1, 14.0, 16), outline=0.0020,
+        rep="cartoon", light="soft", ao=(1, 14.0, 16), outline=0.0,
         ocolor="#2E2C28", ortho=True, blob=1.5, bg="paper",
         palette="molstar", coloring="chain", fog=0.10, interface="epitope",
+        annotations={"legend": 0, "scalebar": 0, "name": 0},
         set={"surface_quality": 1}, post={"grade": {"contrast": 1.03}}),
     "peptide": dict(
         desc="A receptor as a quiet surface with a peptide lying in its "
@@ -511,9 +513,10 @@ STYLES = {
              "chains of both partners as sticks, named, with hydrogen bonds "
              "and salt bridges measured and dashed. The scale a referee asks "
              "for.",
-        rep="cartoon", light="soft", ao=None, outline=0.0014,
+        rep="cartoon", light="soft", ao=None, outline=0.0,
         ocolor="#3A3A38", ortho=True, blob=1.4, bg="paper",
         palette="molstar", coloring="chain", fog=0.06, interface="contacts",
+        annotations={"legend": 0, "scalebar": 0, "name": 0},
         set={"cartoon_transparency": 0.55, "stick_radius": 0.14,
              "cartoon_side_chain_helper": 1, "dash_gap": 0.32,
              "dash_length": 0.30, "dash_radius": 0.035},
@@ -4456,6 +4459,9 @@ SEE ALSO
     _LAST.pop("legend_title", None)
     _LAST.pop("buried_area", None)
     _LAST.pop("auto_caption", None)
+    _LAST.pop("interaction_focus", None)
+    _LAST.pop("interaction_pair", None)
+    _LAST.pop("interaction_mode", None)
 
     # ---- scene -----------------------------------------------------------
     rec.note("scene")
@@ -4560,10 +4566,18 @@ SEE ALSO
             viz_gaps(sel, quiet=1)
         except Exception:
             pass
+    interaction_focus = ""
+    interaction_pair = None
+    interaction_mode = ""
+    contact_labels = ""
+    contact_label_limit = 0
     if st.get("interface"):
         try:
             _apply_interface(rec, sel, st, blob, q >= 1)
             core = _LAST.pop("contact_core", "")
+            interaction_focus = _LAST.pop("interaction_focus", "")
+            interaction_pair = _LAST.pop("interaction_pair", None)
+            interaction_mode = _LAST.pop("interaction_mode", "")
             if core:
                 # A residue-level figure framed on the whole complex is not a
                 # residue-level figure; and looking down the line between the
@@ -4572,10 +4586,8 @@ SEE ALSO
                 if not _orient_across(_LAST.get("contact_pair"), core):
                     cmd.orient(core)
                 cmd.zoom(core, 2.5)
-                try:
-                    viz_label("residues", core, quiet=1)
-                except Exception:
-                    pass
+                contact_labels = core
+                contact_label_limit = _i(_LAST.pop("contact_label_limit", 0))
         except CmdException as exc:
             if not _b(quiet):
                 print(" viz: %s" % exc)
@@ -4598,7 +4610,7 @@ SEE ALSO
         # pass orient=1 when a driver knows the subject is new.
         want_orient = int(not _LAST or _LAST.get("subject_key") != subject_key)
     frame_core = st["focus"] == "core" and want_orient
-    close_up = st.get("interface") == "contacts"
+    close_up = st.get("interface") in ("contacts", "epitope")
     if want_orient and not _s(view) and not focus_sel and not frame_core \
             and not close_up:
         partner = None
@@ -4638,6 +4650,19 @@ SEE ALSO
         viz_frame(frame, sel, quiet=1)
     if _s(view):
         viz_view(view, sel, quiet=1)
+    elif interaction_focus:
+        # Interaction modes are close-ups by definition. A footprint viewed
+        # from the side is a thin orange sliver; a contact map viewed from the
+        # whole assembly is an unreadable nest of labels.
+        if interaction_mode == "epitope" and interaction_pair:
+            if not _orient_pocket(interaction_pair[0], interaction_pair[1]):
+                cmd.orient(interaction_focus)
+        elif interaction_pair:
+            if not _orient_across(interaction_pair, interaction_focus):
+                cmd.orient(interaction_focus)
+        else:
+            cmd.orient(interaction_focus)
+        cmd.zoom(interaction_focus, 2.8)
     elif focus_sel:
         # a close-up style is meaningless framed from across the whole complex
         pocket = "(%s) or byres ((%s) and polymer within 7 of (%s))" \
@@ -4645,6 +4670,13 @@ SEE ALSO
         if not _orient_pocket(sel, focus_sel):
             cmd.orient(pocket)
         cmd.zoom(pocket, 3.0)
+
+    if contact_labels:
+        try:
+            viz_label("residues", contact_labels, size=13, quiet=1,
+                      max_labels=contact_label_limit)
+        except Exception:
+            pass
 
     _LAST_SCRIPT = rec.lines
     _LAST = {
@@ -4748,7 +4780,7 @@ USAGE
 LABEL_MIN_SEP = 0.055
 
 
-def _thin_labels(target, min_sep=LABEL_MIN_SEP):
+def _thin_labels(target, min_sep=LABEL_MIN_SEP, limit=0):
     """Drop labels that would land on top of one another.
 
     PyMOL places a label at its atom and does nothing about collisions, so a
@@ -4781,12 +4813,15 @@ def _thin_labels(target, min_sep=LABEL_MIN_SEP):
         taken.append(xy)
         keep.append('(%s and segi "%s" and chain "%s" and resi %s)'
                     % (rows[i][0], rows[i][1], rows[i][2], rows[i][3]))
+    if limit:
+        keep = keep[:max(1, int(limit))]
     if not keep or len(keep) == len(rows):
         return target
     return "(%s) and (%s)" % (target, " or ".join(keep))
 
 
-def viz_label(what="residues", selection="", size=0, color="", quiet=0):
+def viz_label(what="residues", selection="", size=0, color="", quiet=0,
+              max_labels=0):
     """
 DESCRIPTION
 
@@ -4844,7 +4879,7 @@ EXAMPLES
         target = "(%s) and name CA+C1'" % sel
         if not cmd.count_atoms(target):
             target = "(%s) and guide" % sel
-        target = _thin_labels(target)
+        target = _thin_labels(target, limit=_i(max_labels, 0))
         cmd.label(target, '"%s%s" % (resn.capitalize(), resi)')
     elif kind.startswith("chain"):
         cmd.label("all", "")
@@ -5195,6 +5230,47 @@ def _interface(a, b, cut=INTERFACE_CUT):
     return fa, fb
 
 
+def _dominant_interface_region(a, b, fa, fb, radius=13.0):
+    """Return the most coherent contact patch across two partners.
+
+    Crystal asymmetric units often contain several copies of one complex. A
+    contact close-up that tries to show every copy becomes a labelled map of
+    unrelated sites. Cluster contact residues in 3D and choose the largest
+    physical patch; the full interface remains available through the regular
+    `interface` style and `viz_contact_table`.
+    """
+    try:
+        import numpy
+        rows = []
+        cmd.iterate_state(1, "((%s) or (%s)) and name CA+C1'" % (fa, fb),
+                          "rows.append((model, segi, chain, resi, x, y, z))",
+                          space={"rows": rows})
+        if len(rows) < 3:
+            return "(%s) or (%s)" % (fa, fb)
+        pts = numpy.array([r[4:] for r in rows], dtype=float)
+        near = numpy.sum((pts[:, None, :] - pts[None, :, :]) ** 2,
+                         axis=2) <= radius * radius
+        unseen, groups = set(range(len(rows))), []
+        while unseen:
+            todo, group = [unseen.pop()], []
+            while todo:
+                i = todo.pop()
+                group.append(i)
+                neighbours = set(numpy.where(near[i])[0]) & unseen
+                unseen.difference_update(neighbours)
+                todo.extend(neighbours)
+            groups.append(group)
+        chosen = max(groups, key=len)
+        terms = []
+        for i in chosen:
+            model, segi, chain, resi = rows[i][:4]
+            terms.append('(model "%s" and segi "%s" and chain "%s" and resi %s)'
+                         % (model, segi, chain, resi))
+        return "byres (%s)" % " or ".join(terms)
+    except Exception:
+        return "(%s) or (%s)" % (fa, fb)
+
+
 def _buried_atoms(a, b, name="viz_buried", cut=1.0):
     """Atoms that actually lose solvent-accessible area on binding.
 
@@ -5258,8 +5334,6 @@ def _apply_interface(rec, sel, st, blob, fine):
     pinned = _PINNED.get("partners")
     if pinned:
         big, small = pinned
-        if cmd.count_atoms(big) < cmd.count_atoms(small):
-            big, small = small, big
     else:
         big, small = _partners(sel)
     if not big:
@@ -5275,29 +5349,38 @@ def _apply_interface(rec, sel, st, blob, fine):
     if mode == "peptide" and _residue_count(small) > PEPTIDE_MAX:
         mode = "interface"
     if mode == "epitope":
-        # An epitope is on the antigen, and the antigen is the smaller partner
-        # in every antibody complex. Giving the surface to the larger one drew
-        # the paratope instead and called it a footprint.
-        host, guest = small, big
+        # With `viz_partners host, guest`, the first named selection is the
+        # molecular surface that bears the footprint. Size is not biology:
+        # antigens are frequently larger than their binders.
+        host, guest = big, small
         fh, _fg = _interface(host, guest)
         measured = _buried_atoms(host, guest)
         if measured:
             fh = measured
-        _apply_rep(rec, host, "surface", blob=blob, fine=fine)
-        _apply_rep(rec, guest, "cartoon", blob=blob, fine=fine)
-        cmd.color(_color_name("#DAD6CC"), host)
-        cmd.color(_color_name("#C06B3E"), fh)
-        cmd.color(_color_name("#3D6E9C"), guest)
-        groups = [("#DAD6CC", "antigen", host),
-                  ("#C06B3E", "epitope", fh),
-                  ("#3D6E9C", "partner", guest)]
+        focus = _dominant_interface_region(host, guest, fh,
+                                           _interface(guest, host)[0])
+        host_context = "byres ((%s) and polymer within 20 of (%s))" \
+                       % (host, focus)
+        _apply_rep(rec, host_context, "surface", blob=blob, fine=fine)
+        # The footprint is the evidence in this view.  Showing the bound
+        # partner over it makes a colourful obstruction rather than a clear
+        # epitope; role context belongs in the figure caption or an opt-in
+        # render label.
+        cmd.color(_color_name("#CFD3D0"), host_context)
+        cmd.color(_color_name("#C85433"), fh)
+        groups = [("#CFD3D0", "host surface", host_context),
+                  ("#C85433", "contact footprint", fh)]
+        _LAST["interaction_focus"] = focus
+        _LAST["interaction_pair"] = (host, guest)
+        _LAST["interaction_mode"] = "epitope"
     elif mode == "contacts":
         # Only the residues that touch, drawn as chemistry: a close-up of an
         # interface is a list of interactions, and the reader has to be able
         # to name each one and see how far apart the partners are.
         rec.hide("everything", "(%s)" % sel)
-        core = "(%s) or (%s)" % (fa, fb)
-        rec.show("cartoon", "(%s) and polymer" % sel)
+        core = _dominant_interface_region(big, small, fa, fb)
+        context = "byres ((%s) and polymer within 6 of (%s))" % (sel, core)
+        rec.show("cartoon", context)
         rec.show("sticks", "(%s) and (sidechain or name CA)" % core)
         cmd.color(_color_name("#9BB0C6"), big)
         cmd.color(_color_name("#D8C7A8"), small)
@@ -5310,6 +5393,7 @@ def _apply_interface(rec, sel, st, blob, fine):
                   ("#B4622F", "partner 2 contacts", fb)]
         _LAST["contact_core"] = core
         _LAST["contact_pair"] = (fa, fb)
+        _LAST["contact_label_limit"] = 4
     elif mode == "peptide":
         n_res = _residue_count(small)
         if n_res > PEPTIDE_MAX:
@@ -5334,19 +5418,26 @@ def _apply_interface(rec, sel, st, blob, fine):
                   ("#C7522B", "peptide", small)]
         _polar_contacts(rec, small, big)
     else:
-        # one side a body, the other a ribbon: two translucent surfaces over
-        # two cartoons is four things in the same place and reads as mush
+        # One physical interface is the subject. Keeping the entire
+        # crystallographic assembly in a contact overview leaves detached
+        # chains and duplicate copies competing with the actual interface.
         rec.hide("everything", "(%s)" % sel)
-        _apply_rep(rec, big, "surface", blob=blob, fine=fine)
-        _apply_rep(rec, small, "cartoon", blob=blob, fine=fine)
-        cmd.color(_color_name("#8FA9C4"), big)
-        cmd.color(_color_name("#C9B79A"), small)
-        cmd.color(_color_name("#3D6E9C"), fa)
-        cmd.color(_color_name("#C06B3E"), fb)
-        groups = [("#8FA9C4", "partner 1", big),
-                  ("#3D6E9C", "its interface", fa),
-                  ("#C9B79A", "partner 2", small),
-                  ("#C06B3E", "its interface", fb)]
+        focus = _dominant_interface_region(big, small, fa, fb)
+        big_context = "byres ((%s) and polymer within 22 of (%s))" % (big, focus)
+        small_context = "byres ((%s) and polymer within 16 of (%s))" % (small, focus)
+        _apply_rep(rec, big_context, "surface", blob=blob, fine=fine)
+        rec.show("cartoon", small_context)
+        cmd.color(_color_name("#9FB8D1"), big_context)
+        cmd.color(_color_name("#C9956A"), small_context)
+        cmd.color(_color_name("#235B8F"), fa)
+        cmd.color(_color_name("#C85433"), fb)
+        groups = [("#9FB8D1", "partner 1", big_context),
+                  ("#235B8F", "its interface", fa),
+                  ("#C9956A", "partner 2", small_context),
+                  ("#C85433", "its interface", fb)]
+        _LAST["interaction_focus"] = focus
+        _LAST["interaction_pair"] = (big, small)
+        _LAST["interaction_mode"] = "interface"
     del _LAST_GROUPS[:]
     _LAST_GROUPS.extend(groups)
     _LAST["colour_groups"] = list(_LAST_GROUPS)
@@ -5354,8 +5445,10 @@ def _apply_interface(rec, sel, st, blob, fine):
     area = _buried_area(big, small)
     if area:
         _LAST["buried_area"] = area
-        # the figure that measures something should print what it measured
-        _LAST["auto_caption"] = u"%.0f \u00c5\u00b2 buried per partner" % area
+        # The measurement belongs in the caption or contact table, not across
+        # the bottom of a close-up where it competes with the contact itself.
+        if mode == "interface":
+            _LAST["auto_caption"] = ""
     _refresh_ribbon_shade(sel)
 
 

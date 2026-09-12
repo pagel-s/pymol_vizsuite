@@ -106,7 +106,8 @@ The suite keeps expert work close to the basic loop:
 ```pml
 # Binding interface at overview, footprint, and residue-detail scale.
 viz interface
-viz epitope
+viz_partners chain Y, chain H+L             # host first, then its binder
+viz epitope                                 # footprint on the host surface
 viz contacts
 
 # Make a multi-panel figure from finished renders.

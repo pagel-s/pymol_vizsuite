@@ -321,8 +321,8 @@ viz_inset resi 60-75 and myoglobin, out.png, size=1800x1150, zoom=4.5
 ## An interaction, at three scales
 
 Three styles answering three questions about the same kind of event. Each
-finds the two partners itself, works out which residues actually touch, and
-measures the buried area rather than describing it.
+finds the two partners itself and works out which residues actually touch. For
+a biologically named host/binder pair, set the roles once with `viz_partners`.
 
 ### Which surfaces meet — `interface`
 
@@ -330,7 +330,7 @@ One partner is a body, the other a ribbon lying across it, each with its own
 contact residues brought forward. Two translucent surfaces over two cartoons
 is four things in the same place, so the two sides get different treatments.
 
-![Growth hormone bound to its receptor](20_interface.jpg)
+![Growth hormone bound to its receptor](20_interface.png)
 
 ```
 viz interface
@@ -338,15 +338,15 @@ viz interface
 
 ### What does it actually touch — `epitope`
 
-The **antigen** as a solid surface painted with the footprint of the antibody,
-which is drawn as a ribbon over it. The antigen is the smaller partner, so the
-surface goes to the smaller side — giving it to the larger one drew the
-paratope and called it a footprint.
+The **host surface** painted with the footprint of its binder. The first
+selection passed to `viz_partners` is the host; this makes antibody–antigen
+figures controllable instead of guessing biological roles from size. Only the
+measured footprint is shown, so no partner geometry hides the evidence.
 
-![An antibody footprint on lysozyme](21_epitope.jpg)
+![An antibody footprint on lysozyme](21_epitope.png)
 
 ```
-viz_partners chain H+L, chain Y
+viz_partners chain Y, chain H+L
 viz epitope
 ```
 
@@ -363,13 +363,12 @@ viz peptide
 
 ### The residues themselves — `contacts`
 
-The close-up a referee asks for: every contacting side chain of both partners
-as sticks, named, with hydrogen bonds and salt bridges measured and dashed,
-the fold behind reduced to a translucent ribbon. The camera lays the line
-between the partners *across* the frame rather than looking down it, so the
-two sides separate instead of stacking.
+The close-up a referee asks for: contacting side chains of both partners as
+sticks, with polar contacts dashed. At most four spatially separated residues
+are labelled; the full contact inventory belongs in `viz_contact_table`, not
+on top of the molecular evidence.
 
-![Residue-level contacts between MDM2 and the p53 peptide](23_contacts.jpg)
+![Residue-level contacts between MDM2 and the p53 peptide](23_contacts.png)
 
 ```
 viz contacts
@@ -386,7 +385,7 @@ pointing sideways.
 ![Antibody and lysozyme opened out, epitope fully in view](24_openbook.jpg)
 
 ```
-viz_partners chain H+L, chain Y
+viz_partners chain Y, chain H+L
 viz epitope
 viz_openbook
 ```

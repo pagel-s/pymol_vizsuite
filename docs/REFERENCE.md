@@ -56,6 +56,13 @@ The cinematic `story` intent is annotation-free by default so the molecule can
 own a talk or cover image. Its information layer is always available on demand:
 `viz_render story.png, legend=1, scalebar=20, name=Complex`.
 
+For an epitope figure, call `viz_partners host, binder` first. The first
+selection is rendered as the host surface and receives the highlighted contact
+footprint; this is intentional because molecular size is not a reliable proxy
+for antigen versus binder. Add `legend=1, name=...` to `viz_render` when this
+clean footprint view needs stand-alone role labels. `viz contacts` labels no more than four separated
+residues; use `viz_contact_table` for the full contact inventory.
+
 ## Commands
 
 | Command | Does |

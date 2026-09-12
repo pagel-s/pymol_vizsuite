@@ -32,6 +32,18 @@ sensible style.
 image. If scientific context is needed, opt in at render time with
 `legend=1`, `scalebar=20`, or `name=...`.
 
+For an epitope figure, name biological roles explicitly. The first selection
+is the host surface that receives the highlighted footprint:
+
+```pml
+viz_partners antigen, antibody
+viz epitope
+viz_render epitope.png, column, legend=1, name=Antigen footprint
+```
+
+`viz contacts` labels at most four non-overlapping residues; use
+`viz_contact_table` for the complete residue-pair inventory.
+
 ## Rendering contract
 
 Always use `viz_render` for a deliverable. The viewport is only a preview;
